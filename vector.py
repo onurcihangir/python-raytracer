@@ -1,4 +1,5 @@
 from math import sqrt
+from typing import Union
 
 
 class Vector3D:
@@ -36,28 +37,28 @@ class Vector3D:
         self.y -= vec2.y
         self.z -= vec2.z
 
-    def __mul__(self, scalar: float) -> 'Vector3D':
+    def __mul__(self, scalar: Union[int, float]) -> 'Vector3D':
         """
         Returns new Vector3D object with new coordinates after multiplication
         """
         return self.__class__(scalar * self.x, scalar * self.y, scalar * self.z, self.w)
 
-    def __rmul__(self, scalar: float) -> 'Vector3D':
+    def __rmul__(self, scalar: Union[int, float]) -> 'Vector3D':
         return self * scalar
 
-    def mul(self, scalar: float) -> 'Vector3D':
+    def mul(self, scalar: Union[int, float]) -> 'Vector3D':
         """Multiplies scalar with itself"""
         self.x *= scalar
         self.y *= scalar
         self.z *= scalar
 
-    def __truediv__(self, scalar: float) -> 'Vector3D':
+    def __truediv__(self, scalar: Union[int, float]) -> 'Vector3D':
         """
         Returns new Vector3D object with new coordinates after division
         """
         return self.__class__(self.x / scalar, self.y / scalar, self.z / scalar, self.w)
 
-    def div(self, scalar: float) -> None:
+    def div(self, scalar: Union[int, float]) -> None:
         """Divides scalar with itself"""
         self.x /= scalar
         self.y /= scalar
@@ -120,7 +121,7 @@ class Vector3D:
 if __name__ == "__main__":
     a = Vector3D(2, 3, 1, 0)
     b = Vector3D(1, 2, 3, 0)
-    print(a * 2)
+    print(a * 2.0)
     print(a.cross(b).length())
     print(a.normalize())
     print(a.dot(b))
