@@ -1,4 +1,4 @@
-from vector import Vector3D
+from utils.vector import Vector3D
 from typing import Union
 from math import sin, cos
 
@@ -86,5 +86,6 @@ if __name__ == "__main__":
     c = Vector3D(3, 2, 1, 0)
 
     d = Matrix3D.rotation_z(60)
+    print(a)
     print(a @ b)
     print(d)

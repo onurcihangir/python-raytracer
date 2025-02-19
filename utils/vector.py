@@ -15,7 +15,7 @@ class Vector3D:
         """
         return self.__class__(vec2.x + self.x, vec2.y + self.y, vec2.z + self.z, self.w)
 
-    def add(self, vec2: 'Vector3D') -> 'Vector3D':
+    def add(self, vec2: 'Vector3D') -> None:
         """
         Adds other vector's coordinates to itself
         """
@@ -56,6 +56,8 @@ class Vector3D:
         """
         Returns new Vector3D object with new coordinates after division
         """
+        if scalar == 0:
+            raise ValueError("Cannot divide by zero!")
         return self.__class__(self.x / scalar, self.y / scalar, self.z / scalar, self.w)
 
     def div(self, scalar: Union[int, float]) -> None:
@@ -82,7 +84,7 @@ class Vector3D:
 
         return self
 
-    def length(self) -> 'Vector3D':
+    def length(self) -> float:
         return sqrt(self.x**2+self.y**2+self.z**2)
 
     def normalize_inline(self) -> 'Vector3D':
