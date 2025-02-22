@@ -1,6 +1,6 @@
 from typing import Union
 from utils.vector import Vector3D
-from ..ray import Ray
+from core.ray import Ray
 
 class Sphere:
     def __init__(self, center: Vector3D, radius: float, material):
