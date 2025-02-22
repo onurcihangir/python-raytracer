@@ -1,26 +1,38 @@
 import numpy as np 
 from PIL import Image
-from core.camera import Camera
-from core.objects.sphere import Sphere
 import multiprocessing
 
+from core.objects.sphere import Sphere
+from core.camera import Camera
+from core.light import Light
 from utils.vector import Vector3D
+from utils.shading import phong_shading
 
-def render_pixel(x, y, width, height, camera: Camera, sphere: Sphere):
+def render_pixel(x, y, width, height, camera: Camera, sphere: Sphere, light: Light):
     u = (x / width) * 2 - 1
     v = 1 - (y / height) * 2
 
     ray = camera.get_ray(u, v)
     hit = sphere.intersect(ray)
     if hit:
-        return (255, 0, 0)
+        hit_point = ray.origin + ray.direction * hit
+
+        # O noktadaki yüzey normalini hesapla
+        normal = (hit_point - sphere.center).normalize()
+
+        # Kameraya doğru olan yön (view direction)
+        view_dir = -ray.direction
+
+        # Phong gölgelendirme uygula
+        color = phong_shading(hit_point, normal, view_dir, light, sphere.material)
+        return tuple(color)  # RGB (0-255)
 
     return (0, 0, 0)
 
-def render_scene(width, height, camera, sphere):
+def render_scene(width, height, camera, sphere, light):
     img = np.zeros((height, width, 3), dtype=np.uint8)
     pool = multiprocessing.Pool(processes=multiprocessing.cpu_count())
-    args = [(x, y, width, height, camera, sphere) for y in range(height) for x in range(width)]
+    args = [(x, y, width, height, camera, sphere, light) for y in range(height) for x in range(width)]
     results = pool.starmap(render_pixel, args)
     pool.close()
     pool.join()
@@ -43,7 +55,15 @@ if __name__ == '__main__':
     aspect_ratio = 800 / 600               # 800x600 çözünürlük
 
     # Kamera ve küreyi oluştur
-    camera = Camera(camera_position, look_at, up, fov, aspect_ratio)
-    sphere = Sphere(sphere_center, sphere_radius, None)
+    sphere_material = {
+        "ambient": (0.1, 0.1, 0.1),   # Çevresel ışık katkısı
+        "diffuse": (0.7, 0.0, 0.0),   # Dağınık ışık (Kırmızı)
+        "specular": (1.0, 1.0, 1.0),  # Parlak beyaz yansıma
+        "shininess": 32               # Parlaklık katsayısı
+    }
 
-    render_scene(800, 600, camera, sphere)
+    camera = Camera(camera_position, look_at, up, fov, aspect_ratio)
+    sphere = Sphere(sphere_center, sphere_radius, sphere_material)
+    light = Light(Vector3D(5, 5, -3, 1), (1.0, 1.0, 1.0))
+
+    render_scene(800, 600, camera, sphere, light)
