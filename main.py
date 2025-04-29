@@ -8,13 +8,17 @@ from core.camera import Camera
 from core.light import Light
 from core.ray import Ray
 from utils.vector import Vector3D
-from utils.shading import phong_shading
+from utils.shading import phong_shading, get_reflection_direction, get_refraction_direction
 
-def render_pixel(x, y, width, height, camera: Camera, objects, light: Light):
-    u = (x / width) * 2 - 1
-    v = 1 - (y / height) * 2
+# Maximum depth limit for recursion
+MAX_DEPTH = 5
 
-    ray = camera.get_ray(u, v)
+def trace_ray(ray, objects, light, depth=0):
+    """
+    The function that traces the ray and returns the color value.
+    """
+    if depth >= MAX_DEPTH:
+        return (0, 0, 0)
     
     closest_hit = None
     closest_obj = None
@@ -48,10 +52,57 @@ def render_pixel(x, y, width, height, camera: Camera, objects, light: Light):
                 in_shadow = True
                 break
         
-        color = phong_shading(hit_point, normal, view_dir, light, closest_obj.material, in_shadow)
-        return tuple(color)  # RGB (0-255)
+        local_color = phong_shading(hit_point, normal, view_dir, light, closest_obj.material, in_shadow)
+        
+        color = np.array(local_color, dtype=np.float64)
+        
+        material = closest_obj.material
+        
+        if material.get("reflectivity", 0) > 0:
+            reflection_dir = get_reflection_direction(ray.direction, normal)
+            reflection_origin = hit_point + normal * 0.001  # Reflection acne bias
+            reflection_ray = Ray(reflection_origin, reflection_dir)
+            
+            reflection_color = trace_ray(reflection_ray, objects, light, depth + 1)
+            
+            color = color * (1 - material["reflectivity"]) + np.array(reflection_color) * material["reflectivity"]
+        
+        if material.get("transparency", 0) > 0:
+            # Determining if the ray is inside or outside the object
+            is_inside = ray.direction.dot(normal) > 0
+            refr_normal = -normal if is_inside else normal
+            
+            n1 = 1.0
+            n2 = material.get("refractive_index", 1.5)
+            
+            # Change 'n1' and 'n2' if the ray is inside the object
+            if is_inside:
+                n1, n2 = n2, n1
+            
+            refraction_dir = get_refraction_direction(ray.direction, refr_normal, n1, n2)
+            
+            # If not total internal reflection
+            if refraction_dir:
+                refraction_origin = hit_point - refr_normal * 0.001  # Refraction acne bias
+                refraction_ray = Ray(refraction_origin, refraction_dir)
+                
+                refraction_color = trace_ray(refraction_ray, objects, light, depth + 1)
+                
+                fresnel = 0.1 + 0.9 * pow(1.0 - abs(view_dir.dot(normal)), 5.0)
+                
+                color = color * (1 - material["transparency"] * (1 - fresnel)) + \
+                        np.array(refraction_color) * material["transparency"] * (1 - fresnel)
+        
+        return np.clip(color, 0, 255).astype(np.uint8)
 
     return (0, 0, 0)
+
+def render_pixel(x, y, width, height, camera: Camera, objects, light):
+    u = (x / width) * 2 - 1
+    v = 1 - (y / height) * 2
+
+    ray = camera.get_ray(u, v)
+    return trace_ray(ray, objects, light)
 
 def render_scene(width, height, camera, objects, light):
     img = np.zeros((height, width, 3), dtype=np.uint8)
@@ -82,7 +133,10 @@ if __name__ == '__main__':
         "ambient": (0.1, 0.1, 0.1),
         "diffuse": (0.7, 0.0, 0.0),
         "specular": (1.0, 1.0, 1.0),
-        "shininess": 32
+        "shininess": 32,
+        "reflectivity": 0.5,
+        "transparency": 0.0,
+        "refractive_index": 1.0
     }
     sphere1 = Sphere(sphere1_center, sphere1_radius, sphere1_material)
     
@@ -92,7 +146,10 @@ if __name__ == '__main__':
         "ambient": (0.1, 0.1, 0.1),
         "diffuse": (0.0, 0.7, 0.0),
         "specular": (1.0, 1.0, 1.0),
-        "shininess": 64
+        "shininess": 64,
+        "reflectivity": 0.2,
+        "transparency": 0.8,
+        "refractive_index": 1.5
     }
     sphere2 = Sphere(sphere2_center, sphere2_radius, sphere2_material)
     
@@ -102,7 +159,10 @@ if __name__ == '__main__':
         "ambient": (0.1, 0.1, 0.1),
         "diffuse": (0.5, 0.5, 0.5),
         "specular": (0.3, 0.3, 0.3),
-        "shininess": 8
+        "shininess": 8,
+        "reflectivity": 0.3,
+        "transparency": 0.0,
+        "refractive_index": 1.0
     }
     plane = Plane(plane_point, plane_normal, plane_material)
     
