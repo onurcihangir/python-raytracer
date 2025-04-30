@@ -12,6 +12,8 @@ from utils.shading import phong_shading, get_reflection_direction, get_refractio
 
 # Maximum depth limit for recursion
 MAX_DEPTH = 5
+# Anti-aliasing samples
+AA_SAMPLES = 2
 
 def trace_ray(ray, objects, light, depth=0):
     """
@@ -104,11 +106,35 @@ def render_pixel(x, y, width, height, camera: Camera, objects, light):
     ray = camera.get_ray(u, v)
     return trace_ray(ray, objects, light)
 
+def render_pixel_with_aa(x, y, width, height, camera: Camera, objects, light):
+    """
+    Pixel rendering with anti-aliasing
+    Calculates the average color by sending 4 rays for each pixel
+    """
+    color_sum = np.zeros(3, dtype=np.float64)
+    
+    # Loop through 2x2 grid
+    for sx in range(AA_SAMPLES):
+        for sy in range(AA_SAMPLES):
+            # Offset in the sub-pixel
+            offset_x = (sx + 0.5) / AA_SAMPLES
+            offset_y = (sy + 0.5) / AA_SAMPLES
+            
+            # Pixel coordinate in NDC space (-1 to 1)
+            u = ((x + offset_x) / width) * 2 - 1
+            v = 1 - ((y + offset_y) / height) * 2
+            
+            ray = camera.get_ray(u, v)
+            sample_color = trace_ray(ray, objects, light)
+            color_sum += sample_color
+    
+    return (color_sum / (AA_SAMPLES * AA_SAMPLES)).astype(np.uint8)
+
 def render_scene(width, height, camera, objects, light):
     img = np.zeros((height, width, 3), dtype=np.uint8)
     pool = multiprocessing.Pool(processes=multiprocessing.cpu_count())
     args = [(x, y, width, height, camera, objects, light) for y in range(height) for x in range(width)]
-    results = pool.starmap(render_pixel, args)
+    results = pool.starmap(render_pixel_with_aa, args)
     pool.close()
     pool.join()
 
