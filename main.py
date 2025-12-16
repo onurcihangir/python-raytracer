@@ -62,13 +62,13 @@ def main():
         "specular": (0.3, 0.3, 0.3),
         "shininess": 8,
         "reflectivity": 0.2,
-        "transparency": 0.4,
+        "transparency": 0.0,
         "refractive_index": 1.5
     }
     cube = OBJLoader.create_tetrahedron(
         material=cube_material,
-        center=Vector3D(0, 0.5, -5, 1),
-        size=1.5
+        center=Vector3D(3, 0, -6, 1),
+        size=1.0
     )
 
     objects = [plane, cube]
