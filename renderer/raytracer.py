@@ -2,12 +2,9 @@ import numpy as np
 from core.ray import Ray
 import config
 from utils.shading import phong_shading, get_reflection_direction, get_refraction_direction
+from utils.vector import Vector3D
 
 def trace_ray(ray, objects, light, depth=0):
-    """
-    The function that traces the ray and returns the color value.
-    """
-    
     if depth >= config.MAX_DEPTH:
         return (0, 0, 0)
     
@@ -23,10 +20,19 @@ def trace_ray(ray, objects, light, depth=0):
     if closest_hit:
         hit_point = ray.origin + ray.direction * closest_hit
 
+        # Get normal based on object type
         if hasattr(closest_obj, 'center'):
+            # Sphere object
             normal = (hit_point - closest_obj.center).normalize()
         elif hasattr(closest_obj, 'normal'):
+            # Plane object
             normal = closest_obj.normal
+        elif hasattr(closest_obj, 'get_normal_at_intersection'):
+            # Mesh/Triangle object
+            normal = closest_obj.get_normal_at_intersection(hit_point)
+        else:
+            # Default normal (shouldn't happen)
+            normal = Vector3D(0, 1, 0, 0)
 
         view_dir = -ray.direction
 

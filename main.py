@@ -5,6 +5,7 @@ from core.camera import Camera
 from core.light import Light
 from utils.vector import Vector3D
 from renderer.ui.gui import start_gui
+from utils.obj_loader import OBJLoader
 
 def main():
     # Camera Setup
@@ -54,9 +55,24 @@ def main():
         "refractive_index": 1.0
     }
     plane = Plane(plane_point, plane_normal, plane_material)
-    
-    objects = [sphere1, sphere2, plane]
-    
+
+    cube_material = {
+        "ambient": (0.1, 0.1, 0.1),
+        "diffuse": (0.5, 0.5, 0.5),
+        "specular": (0.3, 0.3, 0.3),
+        "shininess": 8,
+        "reflectivity": 0.2,
+        "transparency": 0.4,
+        "refractive_index": 1.5
+    }
+    cube = OBJLoader.create_tetrahedron(
+        material=cube_material,
+        center=Vector3D(0, 0.5, -5, 1),
+        size=1.5
+    )
+
+    objects = [plane, cube]
+
     light = Light(Vector3D(5, 8, -2, 1), (1.0, 1.0, 1.0))
 
     start_gui(800, 600, camera, objects, light)
