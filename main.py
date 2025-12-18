@@ -9,8 +9,8 @@ from utils.obj_loader import OBJLoader
 
 def main():
     # Camera Setup
-    camera_position = Vector3D(0, 0, 0, 1)
-    look_at = Vector3D(0, 0, -1, 0)
+    camera_position = Vector3D(0, 3, 8, 1)
+    look_at = Vector3D(0, 1, 0, 0)
     up = Vector3D(0, 1, 0, 0)
     fov = 45
     aspect_ratio = 800 / 600
@@ -56,26 +56,30 @@ def main():
     }
     plane = Plane(plane_point, plane_normal, plane_material)
 
-    cube_material = {
-        "ambient": (0.1, 0.1, 0.1),
-        "diffuse": (0.5, 0.5, 0.5),
-        "specular": (0.3, 0.3, 0.3),
-        "shininess": 8,
-        "reflectivity": 0.2,
-        "transparency": 0.0,
-        "refractive_index": 1.5
-    }
-    cube = OBJLoader.create_tetrahedron(
-        material=cube_material,
-        center=Vector3D(3, 0, -6, 1),
-        size=1.0
+    bunny = OBJLoader.load(
+        filepath='models/bunny.obj',
+        material={
+            "ambient": (0.1, 0.1, 0.1),
+            "diffuse": (0.8, 0.7, 0.6),
+            "specular": (0.5, 0.5, 0.5),
+            "shininess": 16,
+            "reflectivity": 0.1,
+            "transparency": 0.0,
+            "refractive_index": 1.0
+        },
+        scale=30.0,
+        position=Vector3D(0, 0, -2, 1)
     )
 
-    objects = [plane, cube]
+    bbox_min, bbox_max = bunny.get_bounding_box()
+    print(f"Bunny bounds: {bbox_min} to {bbox_max}")
 
-    light = Light(Vector3D(5, 8, -2, 1), (1.0, 1.0, 1.0))
 
-    start_gui(800, 600, camera, objects, light)
+    objects = [plane, bunny]
+
+    light = Light(Vector3D(3, 5, 2, 1), (1.0, 1.0, 1.0))
+
+    start_gui(400, 300, camera, objects, light)
 
 if __name__ == '__main__':
     main()

@@ -1,7 +1,7 @@
 # Maximum depth limit for recursion
 MAX_DEPTH = 5
 # Anti-aliasing samples
-AA_SAMPLES = 2
+AA_SAMPLES = 1
 
 render_stats = {
     "ray_count": 0,
