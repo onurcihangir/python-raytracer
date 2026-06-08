@@ -25,3 +25,7 @@ class Plane:
             return None
             
         return t
+
+    def intersect_full(self, ray):
+        t = self.intersect(ray)
+        return (t, self) if t is not None else (None, None)

@@ -6,6 +6,7 @@ from core.light import Light
 from utils.vector import Vector3D
 from renderer.ui.gui import start_gui
 from utils.obj_loader import OBJLoader
+from core.bvh import BVHNode
 
 def main():
     # Camera Setup
@@ -74,8 +75,11 @@ def main():
     bbox_min, bbox_max = bunny.get_bounding_box()
     print(f"Bunny bounds: {bbox_min} to {bbox_max}")
 
-
-    objects = [plane, bunny]
+    # Build BVH from finite objects (those with bounding boxes)
+    finite_objects = [sphere1, sphere2, bunny]
+    planes = [plane]
+    bvh = BVHNode.build(finite_objects)
+    objects = [bvh] + planes
 
     light = Light(Vector3D(3, 5, 2, 1), (1.0, 1.0, 1.0))
 

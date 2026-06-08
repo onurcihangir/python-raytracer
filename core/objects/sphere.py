@@ -20,5 +20,12 @@ class Sphere:
         t1 = tc - thc
         t2 = tc + thc
         return t1 if t1 > 0 else t2
-        
-        
+
+    def intersect_full(self, ray):
+        t = self.intersect(ray)
+        return (t, self) if t is not None else (None, None)
+
+    def get_bounding_box(self):
+        offset = Vector3D(self.radius, self.radius, self.radius, 0)
+        return (self.center - offset, self.center + offset)
+

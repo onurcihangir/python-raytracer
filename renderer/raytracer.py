@@ -12,12 +12,12 @@ def trace_ray(ray, objects, light, depth=0):
     closest_obj = None
     
     for obj in objects:
-        hit = obj.intersect(ray)
-        if hit and (closest_hit is None or hit < closest_hit):
+        hit, leaf = obj.intersect_full(ray)
+        if hit is not None and (closest_hit is None or hit < closest_hit):
             closest_hit = hit
-            closest_obj = obj
-    
-    if closest_hit:
+            closest_obj = leaf
+
+    if closest_hit is not None:
         hit_point = ray.origin + ray.direction * closest_hit
 
         # Get normal based on object type
@@ -44,8 +44,8 @@ def trace_ray(ray, objects, light, depth=0):
         
         in_shadow = False
         for obj in objects:
-            shadow_hit = obj.intersect(shadow_ray)
-            if shadow_hit and shadow_hit < light_distance:
+            shadow_hit, _ = obj.intersect_full(shadow_ray)
+            if shadow_hit is not None and shadow_hit < light_distance:
                 in_shadow = True
                 break
         

@@ -58,6 +58,21 @@ class Mesh:
         
         return closest_t
     
+    def intersect_full(self, ray):
+        closest_t = None
+        closest_triangle = None
+
+        for triangle in self.triangles:
+            t = triangle.intersect(ray)
+            if t is not None:
+                if closest_t is None or t < closest_t:
+                    closest_t = t
+                    closest_triangle = triangle
+
+        if closest_triangle is not None:
+            return closest_t, closest_triangle
+        return None, None
+
     def get_normal_at_intersection(self, hit_point: Vector3D) -> Vector3D:
         if hasattr(self, '_last_hit_triangle'):
             return self._last_hit_triangle.get_normal_at_intersection(hit_point)
@@ -132,4 +147,6 @@ class Mesh:
         return len(self.triangles)
     
     def get_bounding_box(self) -> tuple:
+        if self._bbox_min is None or self._bbox_max is None:
+            raise ValueError(f"Mesh '{self.name}' has no triangles — cannot compute bounding box")
         return (self._bbox_min, self._bbox_max)
