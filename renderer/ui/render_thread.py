@@ -29,30 +29,34 @@ class RenderThread(QThread):
         config.render_stats["end_time"] = 0
         config.render_stats["processed_pixels"] = 0
         config.render_stats["total_pixels"] = self.width * self.height
-        
-        for y in range(self.height):
-            if not self.running:
-                break
-                
-            batch = [(x, y) for x in range(self.width)]
-            
-            pool = multiprocessing.Pool(processes=multiprocessing.cpu_count())
-            args = [(x, y, self.width, self.height, self.camera, self.objects, self.light) for x, y in batch]
-            results = pool.starmap(render_pixel_with_aa, args)
+
+        # Create the worker pool ONCE and reuse it for every row. Spawning a
+        # new pool per row re-launches all processes and re-pickles the scene
+        # on every scanline, which dominates render time (minutes of overhead).
+        pool = multiprocessing.Pool(processes=multiprocessing.cpu_count())
+        try:
+            for y in range(self.height):
+                if not self.running:
+                    break
+
+                args = [(x, y, self.width, self.height, self.camera,
+                         self.objects, self.light) for x in range(self.width)]
+                results = pool.starmap(render_pixel_with_aa, args)
+
+                for x in range(self.width):
+                    self.img_array[y, x] = results[x]
+                config.render_stats["processed_pixels"] += self.width
+
+                avg_rays_per_pixel = config.AA_SAMPLES * config.AA_SAMPLES * 5
+                config.render_stats["ray_count"] = \
+                    config.render_stats["processed_pixels"] * avg_rays_per_pixel
+
+                self.update_signal.emit(self.img_array.copy(), y, y + 1)
+                self.progress_signal.emit(config.render_stats["processed_pixels"])
+        finally:
             pool.close()
             pool.join()
-            
-            for x in range(self.width):
-                self.img_array[y, x] = results[x]
-            config.render_stats["processed_pixels"] += len(batch)
 
-            avg_rays_per_pixel = config.AA_SAMPLES * config.AA_SAMPLES * 5
-            config.render_stats["ray_count"] = config.render_stats["processed_pixels"] * avg_rays_per_pixel
-        
-            
-            self.update_signal.emit(self.img_array.copy(), y, y+1)
-            self.progress_signal.emit(config.render_stats["processed_pixels"])
-        
         config.render_stats["end_time"] = time.time()
         self.finished_signal.emit(self.img_array)
     
