@@ -132,9 +132,23 @@ class RayTracerWindow(QMainWindow):
         self.width_spin = QSpinBox(); self.width_spin.setRange(1, 4000); self.width_spin.setValue(400)
         self.height_spin = QSpinBox(); self.height_spin.setRange(1, 4000); self.height_spin.setValue(300)
         self.aa_spin = QSpinBox(); self.aa_spin.setRange(1, 4); self.aa_spin.setValue(1)
+
+        self.cam_x = QDoubleSpinBox(); self.cam_x.setRange(-1000, 1000); self.cam_x.setValue(0.0)
+        self.cam_y = QDoubleSpinBox(); self.cam_y.setRange(-1000, 1000); self.cam_y.setValue(3.0)
+        self.cam_z = QDoubleSpinBox(); self.cam_z.setRange(-1000, 1000); self.cam_z.setValue(8.0)
+        self.target_x = QDoubleSpinBox(); self.target_x.setRange(-1000, 1000); self.target_x.setValue(0.0)
+        self.target_y = QDoubleSpinBox(); self.target_y.setRange(-1000, 1000); self.target_y.setValue(1.0)
+        self.target_z = QDoubleSpinBox(); self.target_z.setRange(-1000, 1000); self.target_z.setValue(0.0)
+
         form.addRow("Genişlik", self.width_spin)
         form.addRow("Yükseklik", self.height_spin)
         form.addRow("Anti-aliasing", self.aa_spin)
+        form.addRow("Kamera X", self.cam_x)
+        form.addRow("Kamera Y", self.cam_y)
+        form.addRow("Kamera Z", self.cam_z)
+        form.addRow("Hedef X", self.target_x)
+        form.addRow("Hedef Y", self.target_y)
+        form.addRow("Hedef Z", self.target_z)
         set_group.setLayout(form)
 
         # --- Lights group ---
@@ -166,6 +180,8 @@ class RayTracerWindow(QMainWindow):
         # collect controls to enable/disable during render
         self._controls = [self.type_combo, add_btn, del_btn, self.object_list,
                           self.width_spin, self.height_spin, self.aa_spin,
+                          self.cam_x, self.cam_y, self.cam_z,
+                          self.target_x, self.target_y, self.target_z,
                           add_light_btn, del_light_btn, self.light_list]
         return panel
 
@@ -210,10 +226,13 @@ class RayTracerWindow(QMainWindow):
     def start_render(self):
         width = self.width_spin.value()
         height = self.height_spin.value()
+        camera_pos = (self.cam_x.value(), self.cam_y.value(), self.cam_z.value())
+        look_at = (self.target_x.value(), self.target_y.value(), self.target_z.value())
 
         try:
             camera, objects, lights = build_scene(
-                width, height, self.object_specs, self.light_specs)
+                width, height, self.object_specs, self.light_specs,
+                camera_pos, look_at)
         except Exception as e:
             QMessageBox.critical(self, "Sahne Hatası", f"Sahne kurulamadı:\n{e}")
             return

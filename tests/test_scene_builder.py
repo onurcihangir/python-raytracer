@@ -52,6 +52,25 @@ def test_build_tetra():
 _LIGHTS = [{"position": (3, 5, 2), "color": (1, 1, 1), "intensity": 1.0}]
 
 
+def test_build_scene_custom_camera():
+    from renderer.ui.scene_builder import build_scene
+    camera, objects, lights = build_scene(
+        400, 300, [], _LIGHTS, camera_pos=(5, 2, 10), look_at=(0, 0, 0))
+    assert camera.position.x == 5 and camera.position.y == 2 and camera.position.z == 10
+    # direction is normalized (look_at - position): (-5,-2,-10) normalized
+    import math
+    mag = math.sqrt(5*5 + 2*2 + 10*10)
+    assert abs(camera.direction.x - (-5 / mag)) < 1e-9
+    assert abs(camera.direction.y - (-2 / mag)) < 1e-9
+    assert abs(camera.direction.z - (-10 / mag)) < 1e-9
+
+
+def test_build_scene_default_camera():
+    from renderer.ui.scene_builder import build_scene
+    camera, objects, lights = build_scene(400, 300, [], _LIGHTS)
+    assert camera.position.x == 0 and camera.position.y == 3 and camera.position.z == 8
+
+
 def test_build_scene_empty():
     camera, objects, lights = build_scene(400, 300, [], _LIGHTS)
     assert objects == []

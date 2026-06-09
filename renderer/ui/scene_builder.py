@@ -61,18 +61,19 @@ def build_light(spec):
     return Light(pos, (r * i, g * i, b * i))
 
 
-def build_scene(width, height, object_specs, light_specs):
+def build_scene(width, height, object_specs, light_specs,
+                camera_pos=(0, 3, 8), look_at=(0, 1, 0)):
     """Build (camera, objects, lights) from object/light specs and settings.
 
     Finite objects (sphere/cube/tetra/obj) go into a BVH; planes are kept
     separate (infinite, excluded from the BVH).
     """
-    camera_position = Vector3D(0, 3, 8, 1)
-    look_at = Vector3D(0, 1, 0, 0)
+    camera_position = Vector3D(camera_pos[0], camera_pos[1], camera_pos[2], 1)
+    look_at_v = Vector3D(look_at[0], look_at[1], look_at[2], 0)
     up = Vector3D(0, 1, 0, 0)
     fov = 45
     aspect_ratio = width / height
-    camera = Camera(camera_position, look_at, up, fov, aspect_ratio)
+    camera = Camera(camera_position, look_at_v, up, fov, aspect_ratio)
 
     finite_objects = []
     planes = []
