@@ -24,6 +24,18 @@ def phong_shading(hit_point, normal, view_dir, light, material, in_shadow=False)
     color = ambient + diffuse + specular
     return np.clip(color * 255, 0, 255).astype(np.uint8)
 
+def diffuse_specular(hit_point, normal, view_dir, light, material):
+    """Diffuse + specular contribution of a single light, in 0-1 scale (no ambient)."""
+    light_dir = (light.position - hit_point).normalize()
+    diff = max(normal.dot(light_dir), 0)
+    diffuse = np.array(material["diffuse"]) * diff * np.array(light.intensity)
+
+    reflect_dir = (normal * 2 * normal.dot(light_dir) - light_dir).normalize()
+    spec = max(view_dir.dot(reflect_dir), 0) ** material["shininess"]
+    specular = np.array(material["specular"]) * spec * np.array(light.intensity)
+
+    return diffuse + specular
+
 def get_reflection_direction(incident, normal):
     """
     Calculates reflection vector: R = I - 2 * (I · N) * N

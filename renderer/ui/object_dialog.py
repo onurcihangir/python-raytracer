@@ -173,3 +173,58 @@ def summarize_spec(spec):
         name = spec["path"].split("/")[-1] if spec.get("path") else "?"
         return f"{label} {name} @ {spec['position']} x{spec['scale']}"
     return label
+
+
+class LightDialog(QDialog):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Işık Ekle")
+        self._color = QColor(255, 255, 255)  # default white
+
+        form = QFormLayout()
+        self._px = _spin(-1000, 1000, 3.0)
+        self._py = _spin(-1000, 1000, 5.0)
+        self._pz = _spin(-1000, 1000, 2.0)
+        form.addRow("Konum X", self._px)
+        form.addRow("Konum Y", self._py)
+        form.addRow("Konum Z", self._pz)
+
+        self._color_btn = QPushButton("Renk Seç…")
+        self._color_btn.clicked.connect(self._pick_color)
+        self._update_color_btn()
+        form.addRow("Renk", self._color_btn)
+
+        self._intensity = _spin(0.0, 10.0, 1.0, step=0.1)
+        form.addRow("Yoğunluk", self._intensity)
+
+        buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        buttons.accepted.connect(self.accept)
+        buttons.rejected.connect(self.reject)
+
+        layout = QVBoxLayout()
+        layout.addLayout(form)
+        layout.addWidget(buttons)
+        self.setLayout(layout)
+
+    def _pick_color(self):
+        c = QColorDialog.getColor(self._color, self, "Işık Rengi")
+        if c.isValid():
+            self._color = c
+            self._update_color_btn()
+
+    def _update_color_btn(self):
+        self._color_btn.setStyleSheet(f"background-color: {self._color.name()};")
+
+    def get_result_spec(self):
+        return {
+            "position": (self._px.value(), self._py.value(), self._pz.value()),
+            "color": (self._color.red() / 255.0,
+                      self._color.green() / 255.0,
+                      self._color.blue() / 255.0),
+            "intensity": self._intensity.value(),
+        }
+
+
+def summarize_light(spec):
+    pos = spec["position"]
+    return f"Işık @ ({pos[0]:.1f}, {pos[1]:.1f}, {pos[2]:.1f}) ×{spec['intensity']:.1f}"

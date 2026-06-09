@@ -14,7 +14,8 @@ from PyQt5.QtCore import Qt, QTimer, pyqtSlot
 import config
 from renderer.ui.render_thread import RenderThread
 from renderer.ui.scene_builder import build_scene
-from renderer.ui.object_dialog import ObjectDialog, summarize_spec, TYPE_LABELS
+from renderer.ui.object_dialog import (
+    ObjectDialog, summarize_spec, TYPE_LABELS, LightDialog, summarize_light)
 from renderer.ui.style import STYLESHEET
 
 
@@ -22,6 +23,7 @@ class RayTracerWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.object_specs = []
+        self.light_specs = [{"position": (3, 5, 2), "color": (1, 1, 1), "intensity": 1.0}]
         self.render_thread = None
         self._stopped_by_user = False
         self.img_array = np.zeros((300, 400, 3), dtype=np.uint8)
@@ -130,17 +132,25 @@ class RayTracerWindow(QMainWindow):
         self.width_spin = QSpinBox(); self.width_spin.setRange(1, 4000); self.width_spin.setValue(400)
         self.height_spin = QSpinBox(); self.height_spin.setRange(1, 4000); self.height_spin.setValue(300)
         self.aa_spin = QSpinBox(); self.aa_spin.setRange(1, 4); self.aa_spin.setValue(1)
-        self.lx = QDoubleSpinBox(); self.lx.setRange(-1000, 1000); self.lx.setValue(3.0)
-        self.ly = QDoubleSpinBox(); self.ly.setRange(-1000, 1000); self.ly.setValue(5.0)
-        self.lz = QDoubleSpinBox(); self.lz.setRange(-1000, 1000); self.lz.setValue(2.0)
-
         form.addRow("Genişlik", self.width_spin)
         form.addRow("Yükseklik", self.height_spin)
         form.addRow("Anti-aliasing", self.aa_spin)
-        form.addRow("Işık X", self.lx)
-        form.addRow("Işık Y", self.ly)
-        form.addRow("Işık Z", self.lz)
         set_group.setLayout(form)
+
+        # --- Lights group ---
+        light_group = QGroupBox("Işıklar")
+        light_layout = QVBoxLayout()
+        add_light_btn = QPushButton("Işık Ekle")
+        add_light_btn.clicked.connect(self.on_add_light)
+        del_light_btn = QPushButton("Sil")
+        del_light_btn.clicked.connect(self.on_remove_light)
+        self.light_list = QListWidget()
+        for spec in self.light_specs:
+            self.light_list.addItem(summarize_light(spec))
+        light_layout.addWidget(add_light_btn)
+        light_layout.addWidget(self.light_list)
+        light_layout.addWidget(del_light_btn)
+        light_group.setLayout(light_layout)
 
         # --- Action ---
         self.start_btn = QPushButton("Start")
@@ -149,13 +159,14 @@ class RayTracerWindow(QMainWindow):
 
         layout.addWidget(obj_group)
         layout.addWidget(set_group)
+        layout.addWidget(light_group)
         layout.addWidget(self.start_btn)
         layout.addStretch()
 
         # collect controls to enable/disable during render
         self._controls = [self.type_combo, add_btn, del_btn, self.object_list,
                           self.width_spin, self.height_spin, self.aa_spin,
-                          self.lx, self.ly, self.lz]
+                          add_light_btn, del_light_btn, self.light_list]
         return panel
 
     # ---------- Object management ----------
@@ -174,6 +185,20 @@ class RayTracerWindow(QMainWindow):
         self.object_list.takeItem(row)
         del self.object_specs[row]
 
+    def on_add_light(self):
+        dialog = LightDialog(self)
+        if dialog.exec_() == LightDialog.Accepted:
+            spec = dialog.get_result_spec()
+            self.light_specs.append(spec)
+            self.light_list.addItem(summarize_light(spec))
+
+    def on_remove_light(self):
+        row = self.light_list.currentRow()
+        if row < 0:
+            return
+        self.light_list.takeItem(row)
+        del self.light_specs[row]
+
     # ---------- Render lifecycle ----------
     def on_start_stop(self):
         if self.render_thread is not None and self.render_thread.isRunning():
@@ -185,11 +210,10 @@ class RayTracerWindow(QMainWindow):
     def start_render(self):
         width = self.width_spin.value()
         height = self.height_spin.value()
-        light_pos = (self.lx.value(), self.ly.value(), self.lz.value())
 
         try:
-            camera, objects, light = build_scene(
-                width, height, self.object_specs, light_pos)
+            camera, objects, lights = build_scene(
+                width, height, self.object_specs, self.light_specs)
         except Exception as e:
             QMessageBox.critical(self, "Sahne Hatası", f"Sahne kurulamadı:\n{e}")
             return
@@ -206,7 +230,7 @@ class RayTracerWindow(QMainWindow):
         self.start_btn.setText("Stop")
 
         self._stopped_by_user = False
-        self.render_thread = RenderThread(width, height, camera, objects, light)
+        self.render_thread = RenderThread(width, height, camera, objects, lights)
         self.render_thread.update_signal.connect(self.updateRender)
         self.render_thread.finished_signal.connect(self.renderFinished)
         self.render_thread.progress_signal.connect(self.updateProgress)

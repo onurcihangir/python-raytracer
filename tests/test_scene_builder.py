@@ -49,17 +49,21 @@ def test_build_tetra():
     assert obj.get_triangle_count() == 4
 
 
+_LIGHTS = [{"position": (3, 5, 2), "color": (1, 1, 1), "intensity": 1.0}]
+
+
 def test_build_scene_empty():
-    camera, objects, light = build_scene(400, 300, [], (3, 5, 2))
+    camera, objects, lights = build_scene(400, 300, [], _LIGHTS)
     assert objects == []
     assert abs(camera.aspect_ratio - 400 / 300) < 1e-9
-    assert light.position.x == 3 and light.position.y == 5 and light.position.z == 2
+    assert len(lights) == 1
+    assert lights[0].position.x == 3 and lights[0].position.y == 5 and lights[0].position.z == 2
 
 
 def test_build_scene_only_plane():
     specs = [{"type": "plane", "point": (0, -1, 0), "normal": (0, 1, 0),
               "material": make_material((0.5, 0.5, 0.5), 0.0)}]
-    camera, objects, light = build_scene(400, 300, specs, (3, 5, 2))
+    camera, objects, lights = build_scene(400, 300, specs, _LIGHTS)
     assert len(objects) == 1
     assert isinstance(objects[0], Plane)
 
@@ -67,7 +71,7 @@ def test_build_scene_only_plane():
 def test_build_scene_only_sphere():
     specs = [{"type": "sphere", "position": (0, 0, -3), "radius": 1.0,
               "material": make_material((1, 0, 0), 0.0)}]
-    camera, objects, light = build_scene(400, 300, specs, (3, 5, 2))
+    camera, objects, lights = build_scene(400, 300, specs, _LIGHTS)
     # single finite object: BVHNode.build returns the bare object as leaf
     assert len(objects) == 1
     assert isinstance(objects[0], Sphere)
@@ -82,11 +86,36 @@ def test_build_scene_mixed():
         {"type": "plane", "point": (0, -1, 0), "normal": (0, 1, 0),
          "material": make_material((0.5, 0.5, 0.5), 0.0)},
     ]
-    camera, objects, light = build_scene(400, 300, specs, (3, 5, 2))
+    camera, objects, lights = build_scene(400, 300, specs, _LIGHTS)
     # two finite objects -> a BVHNode; one plane -> separate
     assert len(objects) == 2
     assert isinstance(objects[0], BVHNode)
     assert isinstance(objects[1], Plane)
+
+
+def test_build_light_color_times_intensity():
+    from renderer.ui.scene_builder import build_light
+    light = build_light({"position": (1, 2, 3), "color": (0.5, 0.4, 0.2), "intensity": 2.0})
+    assert light.position.x == 1 and light.position.y == 2 and light.position.z == 3
+    assert abs(light.intensity[0] - 1.0) < 1e-9   # 0.5 * 2.0
+    assert abs(light.intensity[1] - 0.8) < 1e-9   # 0.4 * 2.0
+    assert abs(light.intensity[2] - 0.4) < 1e-9   # 0.2 * 2.0
+
+
+def test_build_scene_two_lights():
+    specs = [
+        {"position": (1, 0, 0), "color": (1, 1, 1), "intensity": 1.0},
+        {"position": (-1, 0, 0), "color": (1, 0, 0), "intensity": 0.5},
+    ]
+    camera, objects, lights = build_scene(400, 300, [], specs)
+    assert len(lights) == 2
+    assert lights[1].position.x == -1
+    assert abs(lights[1].intensity[0] - 0.5) < 1e-9 and lights[1].intensity[1] == 0.0
+
+
+def test_build_scene_no_lights():
+    camera, objects, lights = build_scene(400, 300, [], [])
+    assert lights == []
 
 
 def _run_all():

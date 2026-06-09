@@ -10,8 +10,9 @@ A feature-rich ray tracing rendering engine implemented in Python with a PyQt5 G
 
 #### 1️⃣ **Shading and Lighting**
 - Phong illumination model with ambient, diffuse and specular components
-- Realistic shadow casting
-- Multiple light source support
+- Realistic shadow casting (each light casts its own shadow ray)
+- Multiple light sources: any number of lights, each with its own position, color, and intensity
+- Ambient added once per shaded point so brightness stays consistent as lights are added
 
 #### 2️⃣ **Reflections and Refractions**
 - Realistic reflections with configurable reflectivity
@@ -38,14 +39,16 @@ A feature-rich ray tracing rendering engine implemented in Python with a PyQt5 G
 
 #### 6️⃣ **BVH Acceleration**
 - Scene-level Bounding Volume Hierarchy (midpoint split) over finite objects
+- Mesh-internal BVH over triangles, so dense OBJ models render in O(log n) triangle time
 - Stateless traversal returning the closest hit leaf; infinite planes tested separately
 
 #### 7️⃣ **Interactive Rendering Interface**
-- GUI visualization with PyQt5
+- GUI visualization with PyQt5 (modern dark theme)
 - Build scenes from the UI: add Sphere / Cube / Tetrahedron / Plane / OBJ via a parameter dialog (position, size, color, reflectivity)
-- Editable settings: resolution, anti-aliasing samples, light position
+- Manage multiple lights from the UI: add/remove lights, each with position, color, and intensity
+- Editable settings: resolution, anti-aliasing samples
 - Start / Stop render lifecycle (no auto-render on launch; change settings and re-render)
-- Multi-threaded rendering with progress tracking
+- Multi-threaded rendering with progress tracking (scene shipped once per worker, not per pixel)
 - Real-time statistics:
   - Rendering time
   - Ray count
@@ -89,9 +92,10 @@ python main.py
 The window opens with an empty scene (no auto-render). To render:
 
 1. Pick an object type (Küre / Küp / Dörtyüzlü / Düzlem / OBJ Model) and click **Ekle** to open the parameter dialog (position, size, color, reflectivity). Added objects appear in the list; select one and click **Sil** to remove it.
-2. Adjust resolution, anti-aliasing, and light position in the settings panel.
-3. Click **Start** to render (the button becomes **Stop** while rendering). When finished, the image is saved to `output.png`.
-4. Change the scene or settings and click **Start** again to re-render.
+2. Manage lights in the **Işıklar** panel: click **Işık Ekle** to add a light (position, color, intensity); a default white light is present on launch. Select a light and click **Sil** to remove it.
+3. Adjust resolution and anti-aliasing in the settings panel.
+4. Click **Start** to render (the button becomes **Stop** while rendering). When finished, the image is saved to `output.png`.
+5. Change the scene, lights, or settings and click **Start** again to re-render.
 
 ## Project Structure
 

@@ -53,8 +53,16 @@ def build_object(spec):
     raise ValueError(f"Unknown object type: {t}")
 
 
-def build_scene(width, height, object_specs, light_pos):
-    """Build (camera, objects, light) from object specs and global settings.
+def build_light(spec):
+    """Build a Light from a light spec. intensity tuple = color * intensity."""
+    r, g, b = spec["color"]
+    i = spec["intensity"]
+    pos = Vector3D(spec["position"][0], spec["position"][1], spec["position"][2], 1)
+    return Light(pos, (r * i, g * i, b * i))
+
+
+def build_scene(width, height, object_specs, light_specs):
+    """Build (camera, objects, lights) from object/light specs and settings.
 
     Finite objects (sphere/cube/tetra/obj) go into a BVH; planes are kept
     separate (infinite, excluded from the BVH).
@@ -81,7 +89,6 @@ def build_scene(width, height, object_specs, light_pos):
         objects.append(bvh)
     objects.extend(planes)
 
-    light = Light(Vector3D(light_pos[0], light_pos[1], light_pos[2], 1),
-                  (1.0, 1.0, 1.0))
+    lights = [build_light(s) for s in light_specs]
 
-    return camera, objects, light
+    return camera, objects, lights

@@ -13,13 +13,13 @@ class RenderThread(QThread):
     finished_signal = pyqtSignal(np.ndarray)
     progress_signal = pyqtSignal(int)
     
-    def __init__(self, width, height, camera, objects, light):
+    def __init__(self, width, height, camera, objects, lights):
         super().__init__()
         self.width = width
         self.height = height
         self.camera = camera
         self.objects = objects
-        self.light = light
+        self.lights = lights
         self.img_array = np.zeros((height, width, 3), dtype=np.uint8)
         self.running = True
     
@@ -39,7 +39,7 @@ class RenderThread(QThread):
             processes=multiprocessing.cpu_count(),
             initializer=init_worker,
             initargs=(self.width, self.height, self.camera,
-                      self.objects, self.light))
+                      self.objects, self.lights))
         try:
             for y in range(self.height):
                 if not self.running:
@@ -52,7 +52,7 @@ class RenderThread(QThread):
                     self.img_array[y, x] = results[x]
                 config.render_stats["processed_pixels"] += self.width
 
-                avg_rays_per_pixel = config.AA_SAMPLES * config.AA_SAMPLES * 5
+                avg_rays_per_pixel = config.AA_SAMPLES * config.AA_SAMPLES * (1 + len(self.lights))
                 config.render_stats["ray_count"] = \
                     config.render_stats["processed_pixels"] * avg_rays_per_pixel
 
