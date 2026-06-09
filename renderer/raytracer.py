@@ -115,5 +115,30 @@ def render_pixel_with_aa(x, y, width, height, camera, objects, light):
             ray = camera.get_ray(u, v)
             sample_color = trace_ray(ray, objects, light)
             color_sum += sample_color
-    
+
     return (color_sum / (config.AA_SAMPLES * config.AA_SAMPLES)).astype(np.uint8)
+
+
+# --- Multiprocessing worker support -------------------------------------------
+# The scene (camera, objects, light) is the same for every pixel. Passing it in
+# each task tuple re-pickles the whole scene (including large mesh BVH trees) per
+# pixel, which dominates render time. Instead the pool initializer ships it once
+# per worker process and stores it in this module-level context; per-pixel tasks
+# then carry only the (x, y) integer coordinates.
+_worker_ctx = {}
+
+
+def init_worker(width, height, camera, objects, light):
+    """Pool initializer: store the immutable scene once per worker process."""
+    _worker_ctx["width"] = width
+    _worker_ctx["height"] = height
+    _worker_ctx["camera"] = camera
+    _worker_ctx["objects"] = objects
+    _worker_ctx["light"] = light
+
+
+def render_pixel_coord(x, y):
+    """Render one pixel using the worker's stored scene context."""
+    c = _worker_ctx
+    return render_pixel_with_aa(
+        x, y, c["width"], c["height"], c["camera"], c["objects"], c["light"])

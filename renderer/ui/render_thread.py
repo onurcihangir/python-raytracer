@@ -3,7 +3,7 @@ import numpy as np
 import multiprocessing
 from PyQt5.QtCore import QThread, pyqtSignal
 import config
-from renderer.raytracer import render_pixel_with_aa
+from renderer.raytracer import init_worker, render_pixel_coord
 
 class RenderThread(QThread):
     """
@@ -30,18 +30,23 @@ class RenderThread(QThread):
         config.render_stats["processed_pixels"] = 0
         config.render_stats["total_pixels"] = self.width * self.height
 
-        # Create the worker pool ONCE and reuse it for every row. Spawning a
-        # new pool per row re-launches all processes and re-pickles the scene
-        # on every scanline, which dominates render time (minutes of overhead).
-        pool = multiprocessing.Pool(processes=multiprocessing.cpu_count())
+        # Create the worker pool ONCE and reuse it for every row. The scene is
+        # shipped to each worker a single time via the pool initializer; per-row
+        # tasks then carry only (x, y) coordinates. Passing the scene in every
+        # task tuple re-pickles the whole scene (incl. large mesh BVH trees) per
+        # pixel, which otherwise dominates render time (minutes of overhead).
+        pool = multiprocessing.Pool(
+            processes=multiprocessing.cpu_count(),
+            initializer=init_worker,
+            initargs=(self.width, self.height, self.camera,
+                      self.objects, self.light))
         try:
             for y in range(self.height):
                 if not self.running:
                     break
 
-                args = [(x, y, self.width, self.height, self.camera,
-                         self.objects, self.light) for x in range(self.width)]
-                results = pool.starmap(render_pixel_with_aa, args)
+                args = [(x, y) for x in range(self.width)]
+                results = pool.starmap(render_pixel_coord, args)
 
                 for x in range(self.width):
                     self.img_array[y, x] = results[x]

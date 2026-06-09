@@ -83,3 +83,17 @@ class Triangle:
     
     def get_area(self) -> float:
         return self.edge1.cross(self.edge2).length() * 0.5
+
+    def intersect_full(self, ray):
+        """Return (t, self) for a hit, or (None, None) on miss."""
+        t = self.intersect(ray)
+        if t is not None:
+            return t, self
+        return None, None
+
+    def get_bounding_box(self):
+        xs = (self.v0.x, self.v1.x, self.v2.x)
+        ys = (self.v0.y, self.v1.y, self.v2.y)
+        zs = (self.v0.z, self.v1.z, self.v2.z)
+        return (Vector3D(min(xs), min(ys), min(zs), 1),
+                Vector3D(max(xs), max(ys), max(zs), 1))

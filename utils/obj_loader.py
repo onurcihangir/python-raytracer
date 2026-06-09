@@ -106,6 +106,7 @@ class OBJLoader:
                             mesh.add_triangle(v0, v1, v2)
             
             print(f"Mesh created with {mesh.get_triangle_count()} triangles")
+            mesh.build_bvh()
             return mesh
             
         except FileNotFoundError:
@@ -152,7 +153,8 @@ class OBJLoader:
         
         mesh = Mesh(material, name="Cube")
         mesh.from_vertices_and_faces(vertices, faces)
-        
+        mesh.build_bvh()
+
         return mesh
     
     @staticmethod
@@ -178,5 +180,6 @@ class OBJLoader:
         
         mesh = Mesh(material, name="Tetrahedron")
         mesh.from_vertices_and_faces(vertices, faces)
-        
+        mesh.build_bvh()
+
         return mesh
